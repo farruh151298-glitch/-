@@ -1,0 +1,6 @@
+{
+  "name": "TezBar — Доставка по Таджикистану",
+  "description": "Сервис городской экспресс-доставки на электроскутерах и автомобилях по Душанбе, Худжанду, Бохтару и Кулябу.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
