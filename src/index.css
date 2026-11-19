@@ -9,8 +9,8 @@
   html {
     font-family: var(--font-sans);
     scroll-behavior: smooth;
-    background-color: #F7F7F5;
-    color: #141413;
+    background-color: #F6F5F0;
+    color: #15201B;
   }
 
   button:focus-visible,
@@ -18,7 +18,7 @@
   select:focus-visible,
   textarea:focus-visible,
   a:focus-visible {
-    outline: 2px solid #141413;
+    outline: 2px solid #0B6E4F;
     outline-offset: 2px;
   }
 }

@@ -1,8 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { LocateFixed, Minus, Navigation, Plus } from 'lucide-react';
-import { ActiveOrder, CityConfig, MapPoint, TariffId } from '../types/delivery';
+import { ActiveOrder, CityConfig, LanguageCode, MapPoint, TariffId } from '../types/delivery';
+import { STRINGS } from '../data/i18n';
 
 interface CityMapProps {
+  lang: LanguageCode;
   city: CityConfig;
   from: MapPoint;
   to: MapPoint;
@@ -13,7 +15,6 @@ interface CityMapProps {
   pickTarget: 'from' | 'to';
   onPickTargetChange: (target: 'from' | 'to') => void;
   onMapSelectPoint: (point: MapPoint, target: 'from' | 'to') => void;
-  mapHint: string;
 }
 
 interface RoamingVehicle {
@@ -39,6 +40,7 @@ function interpolatePolyline(points: Array<[number, number]>, t: number): [numbe
 }
 
 export const CityMap: React.FC<CityMapProps> = ({
+  lang,
   city,
   from,
   to,
@@ -49,13 +51,12 @@ export const CityMap: React.FC<CityMapProps> = ({
   pickTarget,
   onPickTargetChange,
   onMapSelectPoint,
-  mapHint,
 }) => {
+  const s = STRINGS[lang];
   const svgRef = useRef<SVGSVGElement | null>(null);
   const [zoom, setZoom] = useState<number>(1);
   const [roaming, setRoaming] = useState<RoamingVehicle[]>([]);
 
-  // Initialize roaming background fleet whenever city changes
   useEffect(() => {
     const roadCount = Math.max(1, city.roads.length);
     const fleet: RoamingVehicle[] = Array.from({ length: 8 }).map((_, idx) => ({
@@ -69,7 +70,6 @@ export const CityMap: React.FC<CityMapProps> = ({
     setRoaming(fleet);
   }, [city]);
 
-  // Animate background fleet smoothly using requestAnimationFrame
   useEffect(() => {
     let rafId = 0;
     let lastTime = performance.now();
@@ -101,7 +101,6 @@ export const CityMap: React.FC<CityMapProps> = ({
     return () => cancelAnimationFrame(rafId);
   }, []);
 
-  // Urban street-grid route polyline with intermediate bend point
   const routePoints = useMemo<Array<[number, number]>>(() => {
     const midX = (from.x + to.x) / 2;
     const bendX = Math.abs(from.x - to.x) > 120 ? midX : from.x;
@@ -120,7 +119,6 @@ export const CityMap: React.FC<CityMapProps> = ({
       .join(' ');
   }, [routePoints]);
 
-  // Active courier position during order tracking
   const activeCourierCoords = useMemo<[number, number] | null>(() => {
     if (!activeOrder || activeOrder.stage === 'idle' || activeOrder.stage === 'searching') {
       return null;
@@ -155,8 +153,8 @@ export const CityMap: React.FC<CityMapProps> = ({
       {
         x: Math.round(normX),
         y: Math.round(normY),
-        label: `Точка на карте (${Math.round(normX)}, ${Math.round(normY)})`,
-        landmark: city.nameRu,
+        label: `${city.names[lang]} (${Math.round(normX)}, ${Math.round(normY)})`,
+        landmark: city.names[lang],
       },
       pickTarget
     );
@@ -168,60 +166,59 @@ export const CityMap: React.FC<CityMapProps> = ({
   const viewY = (640 - viewH) / 2;
 
   return (
-    <div className="relative w-full h-full min-h-[460px] lg:min-h-[640px] bg-[#ECEBE6] rounded-2xl border border-[#DEDCD4] overflow-hidden flex flex-col justify-between select-none">
-      {/* Top interactive pin-selection bar */}
+    <div className="relative w-full h-full min-h-[460px] lg:min-h-[680px] bg-[#EAE8E0] rounded-2xl border border-[#D9D6CB] overflow-hidden flex flex-col justify-between select-none">
+      {/* Top Pin Selector Bar */}
       <div className="relative z-10 flex flex-wrap items-center justify-between gap-2 p-3 sm:p-4 pointer-events-none">
-        <div className="pointer-events-auto inline-flex items-center gap-1 p-1 bg-white/95 backdrop-blur-sm border border-[#DEDCD4] rounded-xl shadow-xs">
+        <div className="pointer-events-auto inline-flex items-center gap-1 p-1 bg-white/95 backdrop-blur-sm border border-[#D9D6CB] rounded-xl shadow-xs">
           <button
             type="button"
             onClick={() => onPickTargetChange('from')}
             className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
               pickTarget === 'from'
-                ? 'bg-[#141413] text-white'
-                : 'text-[#5C5C58] hover:text-[#141413]'
+                ? 'bg-[#0B6E4F] text-white'
+                : 'text-[#5A655F] hover:text-[#15201B]'
             }`}
           >
-            Точка А (Откуда)
+            {s.mapPinFromBtn}
           </button>
           <button
             type="button"
             onClick={() => onPickTargetChange('to')}
             className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
               pickTarget === 'to'
-                ? 'bg-[#FFCC00] text-[#141413]'
-                : 'text-[#5C5C58] hover:text-[#141413]'
+                ? 'bg-[#D98218] text-white'
+                : 'text-[#5A655F] hover:text-[#15201B]'
             }`}
           >
-            Точка Б (Куда)
+            {s.mapPinToBtn}
           </button>
         </div>
 
-        <div className="pointer-events-auto hidden sm:flex items-center gap-2 px-3 py-1.5 bg-white/95 backdrop-blur-sm border border-[#DEDCD4] rounded-xl text-xs text-[#5C5C58]">
-          <Navigation className="w-3.5 h-3.5 text-[#141413]" />
-          <span>{mapHint}</span>
+        <div className="pointer-events-auto hidden sm:flex items-center gap-2 px-3 py-1.5 bg-white/95 backdrop-blur-sm border border-[#D9D6CB] rounded-xl text-xs text-[#5A655F]">
+          <Navigation className="w-3.5 h-3.5 text-[#0B6E4F]" />
+          <span>{s.mapHint}</span>
         </div>
       </div>
 
-      {/* Main SVG Cartographic Canvas */}
+      {/* Cartographic Canvas */}
       <svg
         ref={svgRef}
         onClick={handleSvgClick}
         viewBox={`${viewX} ${viewY} ${viewW} ${viewH}`}
         className="absolute inset-0 w-full h-full cursor-crosshair"
         role="img"
-        aria-label={`Интерактивная карта доставки ${city.nameRu}`}
+        aria-label={city.names[lang]}
       >
-        {/* City Blocks Subtle Grid */}
         <defs>
-          <pattern id="city-blocks" width="80" height="80" patternUnits="userSpaceOnUse">
-            <rect width="80" height="80" fill="#ECEBE6" />
-            <rect x="6" y="6" width="32" height="28" rx="3" fill="#E3E1DA" />
-            <rect x="44" y="6" width="30" height="32" rx="3" fill="#E4E2DB" />
-            <rect x="6" y="40" width="34" height="34" rx="3" fill="#E5E3DC" />
-            <rect x="46" y="44" width="28" height="30" rx="3" fill="#E2E0D9" />
+          <pattern id="tj-city-blocks" width="80" height="80" patternUnits="userSpaceOnUse">
+            <rect width="80" height="80" fill="#EAE8E0" />
+            <rect x="6" y="6" width="32" height="28" rx="3" fill="#E1DFD5" />
+            <rect x="44" y="6" width="30" height="32" rx="3" fill="#E2E0D6" />
+            <rect x="6" y="40" width="34" height="34" rx="3" fill="#E3E1D7" />
+            <rect x="46" y="44" width="28" height="30" rx="3" fill="#DFDDD3" />
           </pattern>
         </defs>
-        <rect x="0" y="0" width="1000" height="640" fill="url(#city-blocks)" />
+        <rect x="0" y="0" width="1000" height="640" fill="url(#tj-city-blocks)" />
 
         {/* City Parks */}
         {city.parks.map((park) => (
@@ -232,26 +229,26 @@ export const CityMap: React.FC<CityMapProps> = ({
               width={park.w}
               height={park.h}
               rx="10"
-              fill="#D4E4CE"
-              stroke="#C1D6BA"
+              fill="#CFE0CC"
+              stroke="#B7CEB3"
               strokeWidth="1.5"
             />
             <text
               x={park.x + park.w / 2}
               y={park.y + park.h / 2 + 4}
               textAnchor="middle"
-              className="fill-[#4E6B47] text-[10px] font-medium pointer-events-none"
+              className="fill-[#3C5C42] text-[10px] font-medium pointer-events-none"
             >
               {park.label}
             </text>
           </g>
         ))}
 
-        {/* River */}
+        {/* Glacial River */}
         <polyline
           points={city.riverPath.map(([x, y]) => `${x},${y}`).join(' ')}
           fill="none"
-          stroke="#BBD9EE"
+          stroke="#A8CBE0"
           strokeWidth="22"
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -259,12 +256,12 @@ export const CityMap: React.FC<CityMapProps> = ({
         <text
           x={city.riverPath[1]?.[0] ? city.riverPath[1][0] + 18 : 370}
           y={city.riverPath[1]?.[1] ? city.riverPath[1][1] + 12 : 120}
-          className="fill-[#5A85A3] text-[10px] font-medium pointer-events-none"
+          className="fill-[#3D6F8E] text-[10px] font-medium pointer-events-none"
         >
-          {city.riverName}
+          {city.riverNames[lang]}
         </text>
 
-        {/* Arterial Roads (casing + inner fill) */}
+        {/* Arterial Roads */}
         {city.roads.map((road, idx) => {
           const pts = road.points.map(([x, y]) => `${x},${y}`).join(' ');
           return (
@@ -272,7 +269,7 @@ export const CityMap: React.FC<CityMapProps> = ({
               <polyline
                 points={pts}
                 fill="none"
-                stroke="#D4D2C9"
+                stroke="#D1CEC2"
                 strokeWidth={road.width + 3}
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -290,7 +287,7 @@ export const CityMap: React.FC<CityMapProps> = ({
                   x={road.points[1][0]}
                   y={road.points[1][1] - road.width - 4}
                   textAnchor="middle"
-                  className="fill-[#76756F] text-[10px] font-semibold pointer-events-none"
+                  className="fill-[#6D756F] text-[10px] font-semibold pointer-events-none"
                 >
                   {road.name}
                 </text>
@@ -299,7 +296,7 @@ export const CityMap: React.FC<CityMapProps> = ({
           );
         })}
 
-        {/* Background Roaming Fleet (E-Scooters & Cars) */}
+        {/* Roaming Fleet */}
         {roaming.map((vehicle) => {
           const road = city.roads[vehicle.roadIndex];
           if (!road) return null;
@@ -308,8 +305,8 @@ export const CityMap: React.FC<CityMapProps> = ({
             <g key={`fleet-${vehicle.id}`} transform={`translate(${vx}, ${vy})`}>
               {vehicle.type === 'scooter' ? (
                 <g>
-                  <circle r="7" fill="#FFCC00" stroke="#141413" strokeWidth="1.5" />
-                  <rect x="-2.5" y="-2.5" width="5" height="5" rx="1" fill="#141413" />
+                  <circle r="7" fill="#0B6E4F" stroke="#FFFFFF" strokeWidth="1.5" />
+                  <rect x="-2.5" y="-2.5" width="5" height="5" rx="1" fill="#F0A830" />
                 </g>
               ) : (
                 <g>
@@ -319,22 +316,22 @@ export const CityMap: React.FC<CityMapProps> = ({
                     width="16"
                     height="10"
                     rx="3"
-                    fill="#141413"
+                    fill="#15201B"
                     stroke="#FFFFFF"
                     strokeWidth="1.5"
                   />
-                  <rect x="-3" y="-3" width="6" height="6" rx="1" fill="#FFCC00" />
+                  <rect x="-3" y="-3" width="6" height="6" rx="1" fill="#0B6E4F" />
                 </g>
               )}
             </g>
           );
         })}
 
-        {/* Routed Delivery Path A -> B */}
+        {/* Route Path A -> B */}
         <path
           d={routePathD}
           fill="none"
-          stroke="#141413"
+          stroke="#0B6E4F"
           strokeWidth="5.5"
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -342,14 +339,14 @@ export const CityMap: React.FC<CityMapProps> = ({
         <path
           d={routePathD}
           fill="none"
-          stroke="#FFCC00"
-          strokeWidth="2.5"
+          stroke="#F0A830"
+          strokeWidth="2.4"
           strokeDasharray="8 6"
           strokeLinecap="round"
           strokeLinejoin="round"
         />
 
-        {/* Clickable City Landmarks */}
+        {/* Landmarks */}
         {city.landmarks.map((lm) => {
           const isFrom = Math.abs(lm.x - from.x) < 4 && Math.abs(lm.y - from.y) < 4;
           const isTo = Math.abs(lm.x - to.x) < 4 && Math.abs(lm.y - to.y) < 4;
@@ -367,25 +364,25 @@ export const CityMap: React.FC<CityMapProps> = ({
               <circle
                 r="5.5"
                 fill="#FFFFFF"
-                stroke="#5C5C58"
+                stroke="#0B6E4F"
                 strokeWidth="2"
-                className="group-hover:fill-[#FFCC00] group-hover:stroke-[#141413] transition-colors"
+                className="group-hover:fill-[#E89E24] transition-colors"
               />
               <rect
                 x="9"
                 y="-11"
-                width={(lm.landmark?.length || lm.label.length) * 6.3 + 12}
+                width={(lm.landmark?.length || lm.label.length) * 6.4 + 12}
                 height="20"
                 rx="5"
                 fill="#FFFFFF"
-                fillOpacity="0.92"
-                stroke="#DEDCD4"
+                fillOpacity="0.94"
+                stroke="#D9D6CB"
                 strokeWidth="1"
               />
               <text
                 x="15"
                 y="2"
-                className="fill-[#2B2B28] text-[10px] font-semibold pointer-events-none"
+                className="fill-[#15201B] text-[10px] font-semibold pointer-events-none"
               >
                 {lm.landmark || lm.label}
               </text>
@@ -393,10 +390,10 @@ export const CityMap: React.FC<CityMapProps> = ({
           );
         })}
 
-        {/* Pin A (Pickup) */}
+        {/* Pin A */}
         <g transform={`translate(${from.x}, ${from.y})`}>
-          <circle r="16" fill="#141413" fillOpacity="0.14" />
-          <circle r="11" fill="#141413" stroke="#FFFFFF" strokeWidth="2.5" />
+          <circle r="16" fill="#0B6E4F" fillOpacity="0.16" />
+          <circle r="11" fill="#0B6E4F" stroke="#FFFFFF" strokeWidth="2.5" />
           <text
             x="0"
             y="4"
@@ -405,14 +402,7 @@ export const CityMap: React.FC<CityMapProps> = ({
           >
             А
           </text>
-          <rect
-            x="-65"
-            y="-36"
-            width="130"
-            height="20"
-            rx="6"
-            fill="#141413"
-          />
+          <rect x="-68" y="-36" width="136" height="20" rx="6" fill="#0B6E4F" />
           <text
             x="0"
             y="-22"
@@ -423,33 +413,33 @@ export const CityMap: React.FC<CityMapProps> = ({
           </text>
         </g>
 
-        {/* Pin B (Dropoff) */}
+        {/* Pin B */}
         <g transform={`translate(${to.x}, ${to.y})`}>
-          <circle r="16" fill="#FFCC00" fillOpacity="0.32" />
-          <circle r="11" fill="#FFCC00" stroke="#141413" strokeWidth="2.5" />
+          <circle r="16" fill="#D98218" fillOpacity="0.24" />
+          <circle r="11" fill="#D98218" stroke="#FFFFFF" strokeWidth="2.5" />
           <text
             x="0"
             y="4"
             textAnchor="middle"
-            className="fill-[#141413] text-[11px] font-bold pointer-events-none"
+            className="fill-white text-[11px] font-bold pointer-events-none"
           >
             Б
           </text>
           <rect
-            x="-65"
+            x="-68"
             y="16"
-            width="130"
+            width="136"
             height="20"
             rx="6"
             fill="#FFFFFF"
-            stroke="#141413"
-            strokeWidth="1.2"
+            stroke="#D98218"
+            strokeWidth="1.4"
           />
           <text
             x="0"
             y="30"
             textAnchor="middle"
-            className="fill-[#141413] text-[10px] font-semibold pointer-events-none"
+            className="fill-[#15201B] text-[10px] font-semibold pointer-events-none"
           >
             {to.landmark || to.label}
           </text>
@@ -458,13 +448,13 @@ export const CityMap: React.FC<CityMapProps> = ({
         {/* Active Dispatched Courier Marker */}
         {activeCourierCoords && activeOrder && (
           <g transform={`translate(${activeCourierCoords[0]}, ${activeCourierCoords[1]})`}>
-            <circle r="18" fill="#141413" fillOpacity="0.18" />
-            <circle r="13" fill="#FFCC00" stroke="#141413" strokeWidth="2.5" />
+            <circle r="18" fill="#0B6E4F" fillOpacity="0.2" />
+            <circle r="13" fill="#E89E24" stroke="#15201B" strokeWidth="2.5" />
             <text
               x="0"
               y="4"
               textAnchor="middle"
-              className="fill-[#141413] text-[10px] font-extrabold pointer-events-none"
+              className="fill-[#15201B] text-[10px] font-extrabold pointer-events-none"
             >
               {activeOrder.tariff === 'scooter'
                 ? 'ЭЛ'
@@ -476,29 +466,29 @@ export const CityMap: React.FC<CityMapProps> = ({
         )}
       </svg>
 
-      {/* Bottom Route Summary + Zoom Controls */}
+      {/* Bottom Summary & Zoom */}
       <div className="relative z-10 flex items-end justify-between gap-3 p-3 sm:p-4 pointer-events-none">
-        <div className="pointer-events-auto bg-white/95 backdrop-blur-sm border border-[#DEDCD4] rounded-xl px-4 py-2.5 flex items-center gap-4 text-xs sm:text-sm">
+        <div className="pointer-events-auto bg-white/95 backdrop-blur-sm border border-[#D9D6CB] rounded-xl px-4 py-2.5 flex items-center gap-4 text-xs sm:text-sm">
           <div>
-            <span className="text-[#5C5C58]">Маршрут: </span>
-            <span className="font-bold text-[#141413] tabular-nums">{distanceKm} км</span>
+            <span className="text-[#5A655F]">{s.mapRouteLabel} </span>
+            <span className="font-bold text-[#15201B] tabular-nums">
+              {distanceKm} {s.kmShort}
+            </span>
           </div>
-          <span className="text-[#DEDCD4]" aria-hidden="true">
+          <span className="text-[#D9D6CB]" aria-hidden="true">
             |
           </span>
           <div>
-            <span className="text-[#5C5C58]">Подача и путь: </span>
-            <span className="font-bold text-[#141413] tabular-nums">~{etaMinutes} мин</span>
+            <span className="text-[#5A655F]">{s.mapEtaLabel} </span>
+            <span className="font-bold text-[#15201B] tabular-nums">
+              ~{etaMinutes} {s.minShort}
+            </span>
           </div>
-          <span className="hidden md:inline text-[#DEDCD4]" aria-hidden="true">
+          <span className="hidden md:inline text-[#D9D6CB]" aria-hidden="true">
             |
           </span>
-          <div className="hidden md:block text-[#5C5C58]">
-            {selectedTariff === 'scooter'
-              ? 'Электроскутер в объезд пробок'
-              : selectedTariff === 'car'
-                ? 'Климат-контроль и багажник'
-                : 'Грузовой борт до 500 кг'}
+          <div className="hidden md:block text-[#5A655F]">
+            {s.mapTariffHints[selectedTariff]}
           </div>
         </div>
 
@@ -506,24 +496,24 @@ export const CityMap: React.FC<CityMapProps> = ({
           <button
             type="button"
             onClick={() => setZoom((z) => Math.min(1.6, Number((z + 0.2).toFixed(2))))}
-            aria-label="Увеличить карту"
-            className="w-10 h-10 bg-white/95 border border-[#DEDCD4] rounded-xl flex items-center justify-center text-[#141413] hover:bg-[#F7F7F5] transition-colors cursor-pointer"
+            aria-label="+"
+            className="w-10 h-10 bg-white/95 border border-[#D9D6CB] rounded-xl flex items-center justify-center text-[#15201B] hover:bg-[#F6F5F0] transition-colors cursor-pointer"
           >
             <Plus className="w-4 h-4" />
           </button>
           <button
             type="button"
             onClick={() => setZoom((z) => Math.max(1, Number((z - 0.2).toFixed(2))))}
-            aria-label="Уменьшить карту"
-            className="w-10 h-10 bg-white/95 border border-[#DEDCD4] rounded-xl flex items-center justify-center text-[#141413] hover:bg-[#F7F7F5] transition-colors cursor-pointer"
+            aria-label="-"
+            className="w-10 h-10 bg-white/95 border border-[#D9D6CB] rounded-xl flex items-center justify-center text-[#15201B] hover:bg-[#F6F5F0] transition-colors cursor-pointer"
           >
             <Minus className="w-4 h-4" />
           </button>
           <button
             type="button"
             onClick={() => setZoom(1)}
-            aria-label="Сбросить масштаб"
-            className="w-10 h-10 bg-white/95 border border-[#DEDCD4] rounded-xl flex items-center justify-center text-[#141413] hover:bg-[#F7F7F5] transition-colors cursor-pointer"
+            aria-label="Reset zoom"
+            className="w-10 h-10 bg-white/95 border border-[#D9D6CB] rounded-xl flex items-center justify-center text-[#15201B] hover:bg-[#F6F5F0] transition-colors cursor-pointer"
           >
             <LocateFixed className="w-4 h-4" />
           </button>

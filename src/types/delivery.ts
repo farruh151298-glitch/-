@@ -2,7 +2,8 @@ export type CityId = 'dushanbe' | 'khujand' | 'bokhtar' | 'kulob';
 export type TariffId = 'scooter' | 'car' | 'cargo';
 export type PaymentMethodId = 'alif' | 'dc' | 'corti' | 'cash';
 export type WorkspaceMode = 'client' | 'courier' | 'track';
-export type LanguageCode = 'ru' | 'tj';
+export type LanguageCode = 'tj' | 'ru' | 'en' | 'uz';
+export type ParcelCategoryId = 'parcel' | 'food' | 'docs' | 'cod_shop' | 'pharmacy' | 'bulk';
 
 export type OrderStage =
   | 'idle'
@@ -13,8 +14,8 @@ export type OrderStage =
   | 'delivered';
 
 export interface MapPoint {
-  x: number; // 0..1000 normalized SVG/Canvas coordinate
-  y: number; // 0..640 normalized SVG/Canvas coordinate
+  x: number; // 0..1000 normalized SVG coordinate
+  y: number; // 0..640 normalized SVG coordinate
   label: string;
   landmark?: string;
 }
@@ -27,14 +28,12 @@ export interface CityRoad {
 
 export interface CityConfig {
   id: CityId;
-  nameRu: string;
-  nameTj: string;
-  kmScale: number; // km per 1000 map units
+  names: Record<LanguageCode, string>;
+  kmScale: number;
   surgeMultiplier: number;
-  surgeLabelRu: string;
-  surgeLabelTj: string;
+  surgeLabels: Record<LanguageCode, string>;
   riverPath: Array<[number, number]>;
-  riverName: string;
+  riverNames: Record<LanguageCode, string>;
   parks: Array<{ x: number; y: number; w: number; h: number; label: string }>;
   roads: CityRoad[];
   landmarks: MapPoint[];
@@ -44,17 +43,15 @@ export interface CityConfig {
 
 export interface TariffConfig {
   id: TariffId;
-  nameRu: string;
-  nameTj: string;
-  subtitleRu: string;
-  subtitleTj: string;
+  names: Record<LanguageCode, string>;
+  subtitles: Record<LanguageCode, string>;
   basePriceTjs: number;
   perKmTjs: number;
   maxWeightKg: number;
   dimensionsCm: string;
   avgEtaMin: number;
-  speedFactor: number; // higher = faster in city traffic
-  fleetNoteRu: string;
+  speedFactor: number;
+  fleetNotes: Record<LanguageCode, string>;
 }
 
 export interface DeliveryOptions {
@@ -79,6 +76,7 @@ export interface ActiveOrder {
   id: string;
   cityId: CityId;
   tariff: TariffId;
+  category: ParcelCategoryId;
   from: MapPoint;
   to: MapPoint;
   fromLandmarkNote: string;
@@ -93,7 +91,7 @@ export interface ActiveOrder {
   pinCode: string;
   courier: CourierProfile;
   createdAt: string;
-  progress: number; // 0..1 along current leg
+  progress: number;
 }
 
 export interface CourierJobOffer {
